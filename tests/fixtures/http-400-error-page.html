@@ -1,0 +1,383 @@
+
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <style type="text/css">
+        :root {
+            --primaryColour: #091f21;
+            --secondaryColour: #c3d042;
+            --tertiaryColour: #ffffff;
+            --backgroundColour: #efeff0;
+            --contentColour: #ffffff;
+        }
+    </style>
+
+    <style type="text/css" id='gHostTenantStyles'>
+
+                .datagrid table tbody td { font-size: 12px !important; } .editModeOnly.controlEdit { display: block; } .editModeOnly { display:none; } ;
+                </style>
+
+    <style type="text/css" id="gHostWidgetConfigurationVariables">
+    :root {
+    }
+
+    html[data-theme="dark"] {
+    }
+    </style>
+
+    <title>Peabody gHost Portal</title>
+
+    <!-- INSERT REQUIRED RESOURCES HERE -->
+    <!-- CSS -->
+    <link rel="stylesheet" href="/gHostTheme/Styles/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/gHostTheme/Styles/responsive.css"/>
+    <link rel="stylesheet" href="/gHostTheme/Styles/font-awesome.min.css"/>
+    <link rel="stylesheet" href="/gHostTheme/Styles/font-awesome.min.css"/>
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lobster&subset=latin"/>  
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap"/>  
+    <link rel="stylesheet" href="https://fonts.cdnfonts.com/css/roobert">
+    <link rel="icon" type="image/x-icon" href="/gHostTheme/Images/favicon.ico">
+    
+    <!-- JS -->
+    <script src="/gHostTheme/Scripts/jquery-1.10.2.js"></script>
+    <script src="/gHostTheme/Scripts/bootstrap452.min.js"></script>
+    
+   
+   
+   
+   
+   <script src="/gHostModules/Scripts/GMetadataProvider.js?v=3&v=Ee3maf0MQsnqnWOc4Rtzk5mSuwSLiU0aIsWKP-wYK5s"></script>
+   <script src="/gHostTheme/Scripts/gHostTheme.js?v=GEVSks_V0tfZSGuyw29f1Igzh5hGydaUanKXmmjQc70"></script>
+   <script src="/gHostModules/Scripts/luxon.js?v=ewLz6wc22TWxAiX491ubIL8Dv68q90CfTsd1sOVChbg"></script>
+   <script src="/gHostModules/Scripts/themeToggle.js?v=CUKg5BbK6oRD7aawLN6f_ZpMBIxJMIJuQe6dNmBOW1s"></script>
+  
+  <link href="/gHostTheme/Styles/style.css?v=eC8OLQ2V8ytOfHjRcisLh_rsJ0y1bqOo3h8ZVWsNDAI" rel="stylesheet" type="text/css" />
+<link href="/gHostTheme/Styles/style-responsive.css?v=rm150vEVwaBrojyiAmhqkcg-RtHusSl8__6su4v6wqU" rel="stylesheet" type="text/css" />
+<link href="/gHostTheme/Styles/flexmobile.css?v=iNRvE1ZSk4o0J6yTGRDNhcbUFdJrBGgRAf5OSkC3mxI" rel="stylesheet" type="text/css" />
+<link href="/gHostTheme/Styles/icons/bootstrap-icons.css?v=9F0k4DwQH4SLOyyKejZmwSu7CqacU0ZECXONAy-mWR4" rel="stylesheet" type="text/css" />
+  
+</head>
+
+<body>
+<div id='tempResources' style="display:none;"></div>    
+<div id="fullscreenWidgetModal" class="hidden">
+
+    </div>
+
+<div id="timezone-panel" class="timezone-panel" style="display:none;">
+    <h2 class="timezone-title">Select Timezone</h2>
+  
+  <div class="timezone-options">
+        <label class="timezone-option">
+          <input type="checkbox" id="tzOption-Site" class="timezone-checkbox">
+          <span>Site Timezone</span>
+        </label>
+    
+        <label class="timezone-option">
+          <input type="checkbox" id="tzOption-Client" class="timezone-checkbox">
+          <span>My Timezone</span>
+        </label>
+    
+        <label class="timezone-option">
+          <input type="checkbox" id="tzOption-Universal" class="timezone-checkbox">
+          <span>Universal Timezone</span>
+        </label>
+      </div>
+
+      <div class="timezone-actions">
+      <button id="saveTimezone-button" class="timezonePopup-button">Save</button>
+      <button id="cancelTimezone-button" class="timezonePopup-button">Cancel</button>
+      </div>
+</div>
+            <div class="pits-bootstrap-scope">
+                <div class="modal" id="mobileCalendarModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title" id="mobileCalendarModalLabel">Select Dates</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="date-time-append"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    <div class="mobilePage">
+        <div class="content-wrapper">
+            <div class="header">
+                <div class="sidebar-button">
+                    <i class="fa fa-bars"></i>
+                </div>
+                <div class="header-left">
+                    <div class="userGreeting">
+                    </div>
+                </div>
+                <div class="header-middle">
+                    <div class="date-time" style='display:none;' >
+                        <div class="from">From</div>
+                        <div class='input-group date'>
+                            <input id="dateTime-startdate" class="from-date gHostInputBordered" type="datetime-local">
+                        </div>
+                        <div class="to">To</div>
+                        <div class='input-group date'>
+                            <input id="dateTime-enddate" class="to-date gHostInputBordered" type="datetime-local">
+                        </div>
+                        <div class="buttons-outer" id="buttons-outer-mobile">
+                            <button type="button" id="RefreshAllGraphs" class="apply gHostInputBordered" data-dismiss="modal">Apply</button>
+                            <button type="button" id="ManualUpdate" style="display:none;">Manual Update</button>
+                            <button type="button" class="cancel" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                        <div id="dateDisplayOnlyDiv">Showing data from <span id="fromDisplayOnly" class="displayOnlyQueryDate"></span> to <span id="toDisplayOnly" class="displayOnlyQueryDate"></span>.</div>
+                    
+                    <div class="mobile-logo">
+                        <img src="/gHostModules/Images/gHostLogoDarkMode.png" data-lightURL="/gHostModules/Images/gHostLogoDarkMode.png" data-darkURL="/gHostModules/Images/gHostLogoDarkMode.png"/>
+                    </div>
+                </div>
+                <div class="header-right-outer">
+                    <div class="header-right">
+                        <div class="buttons-outer" id = "buttons-outer-desktop">
+                            <button type="button" id="openTZSettings" class="apply gHostInputBordered"><i class="bi bi-clock"></i></button>
+                            <button type="button" id="themeBtn" class="apply gHostInputBordered" style="display:none !important;"><i id="themeIcon" class="bi bi-sun"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="container">
+                    <div class="row">
+                        <div class="overview">
+                            <div class="tab-content">
+                                <div id="overview" class="tab-pane active" role="tabpanel">
+
+                                    <div id="layout-main-container">
+                                        <div id="layout-main" class="group">
+                                            <div id="layout-content" class="group">
+
+                                                <div id="footer-quad" class="group">
+                                                </div>
+                                                    <div id="content">
+                                                         <h1>Your browser sent a request that this server could not understand.</h1>
+
+
+                                                    </div>
+                                            </div>
+                                            <div id="asideAll">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="clock-outer">
+                <div class="clock">
+                    <i class="fa fa-clock-o" data-toggle="modal" data-target="#mobileCalendarModal"></i>
+                </div>
+                <div class="clock-backer" data-toggle="modal" data-target="#mobileCalendarModal"></div>
+                <div class="clock-buffer"></div>
+                <div class="clock-footer"></div>
+            </div>
+        </div>
+        <div class="mobileBuffer"></div>
+        <div class="sidebar">
+            <span class="imgsize"><img src="https://beta.ghost.site/gHostTheme/Images/gHostLogo.png" data-lightURL="https://beta.ghost.site/gHostTheme/Images/gHostLogo.png" data-darkURL="/gHostModules/Images/gHostLogoDarkMode.png"/></span> 
+            <div class="sidebar-header">
+                <div class="menu-title">Menu</div>
+            </div>
+            <div class="menu-outer">                
+                <div class="navigation">
+                        
+<ul class="menu menu-main-menu navbar-nav ms-auto">
+<li>
+
+<a class="nav-link" href="/">Home</a>
+</li></ul>
+                </div>               
+            </div>
+            <div id="desktopSidebarFooter" class="desktop-sidebar-footer">
+                                <a class="login" href="/Login">Log in</a>
+            </div>
+            <div id='mobileSidebarFooter' class="sidebar-footer">
+                <div class="logout-outer">
+                        <button class="login" onclick="location.href='/Login'">Login</button>
+                </div>
+            </div>
+        </div>
+        <div class="content-shadow"></div>
+    </div>
+
+    <script>
+    var selectedTimezoneID = "USE_DEFAULT_TIMEZONE";
+    const siteTimezoneID = "Australia/Sydney";
+    // selectedTimezoneID = Intl.DateTimeFormat().resolvedOptions().timeZone; // <-- force overrride to the user's timezone.
+
+    $(document).ready(function () {
+        var url = location.href;
+        var spliturl = url.split("?");
+        var commitChangeStartDate = false;
+        var commitChangeStartTime = false;
+        var commitChangeEndDate = false;
+        var commitChangeEndTime = false;
+
+        var sessionCachedTimezoneOption = sessionStorage.getItem("timezoneOption");
+        switch (sessionCachedTimezoneOption) {
+            case "timezone_site":
+                selectedTimezoneID = siteTimezoneID;
+            break;
+            case "timezone_client":
+                selectedTimezoneID = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            break;
+
+            case "timezone_universal":
+                selectedTimezoneID = "Etc/UTC";
+            break;
+
+            default:
+                selectedTimezoneID = siteTimezoneID;
+            break;
+        }
+
+        // Add styling to menu link of the page we are currently on
+        $('a.nav-link:not(.groupManagementTab), .dropdown-menu>li>a').each(function(element) {
+            if ($(this).attr('href') != "#") {
+             var navItemUrl = this.href.toLowerCase().split("?")[0];
+             if (spliturl[0].toLowerCase().replace("#","") == navItemUrl && navItemUrl[navItemUrl.length - 1] != "#") {                
+                 $(this).addClass('selectedMenu');
+             }
+             else { 
+                $(this).removeClass('selectedMenu');
+             }
+            }
+        });
+
+        // Expansion of all relevant drop down menus, if required to show our highlighted nav link.
+        var allParentsExpanded = false;
+        var currentChild = $(".selectedMenu:not(.groupManagementTab)");
+        if (currentChild.length == 0) allParentsExpanded = true;
+        while (!allParentsExpanded) {
+            var thisParent = currentChild.parent().parent();
+            var ddm = thisParent.siblings(".dropdown-item, .dropdown-toggle");
+            if (ddm.length > 0) {
+                ddm.addClass('expanded');
+                thisParent.toggle();
+                currentChild = thisParent;
+            }
+            else {
+                allParentsExpanded = true;
+            }
+        }
+
+        var sessionCachedStartDate = sessionStorage.getItem("QueryStartDate");
+        var sessionCachedEndDate = sessionStorage.getItem("QueryEndDate");
+        if (spliturl.length > 1) {
+            var querystring = spliturl[1].split("&");
+            var relStartDate = new Date();
+            var relEndDate = new Date();
+            for (var i = 0; i < querystring.length; i++) {
+                var parameters = querystring[i].split("=");
+                for (var j = 0; j < parameters.length; j += 2) {
+                    if (parameters[j] == "RelativeStartDay") {
+                        relStartDate = new Date(GParseTime("[" + parameters[j + 1] + "]", relStartDate));
+                        commitChangeStartDate = true;
+                    }
+                    else if (parameters[j] == "RelativeStartTime") {
+                        relStartDate = new Date(GParseTime("[" + parameters[j + 1] + "]", relStartDate));
+                        commitChangeStartTime = true;
+                    }
+                    else if (parameters[j] == "RelativeEndDay") {
+                        relEndDate = new Date(GParseTime("[" + parameters[j + 1] + "]", relEndDate));
+                        commitChangeEndDate = true;
+                    }
+                    else if (parameters[j] == "RelativeEndTime") {
+                        relEndDate = new Date(GParseTime("[" + parameters[j + 1] + "]", relEndDate));
+                        commitChangeEndTime = true;
+                    }
+                    else if (parameters[j] == "StartDate") {
+                        var exactstartdate = new Date(unescape(parameters[j + 1]));
+                        relStartDate = exactstartdate;
+                        commitChangeStartDate = true;
+                        commitChangeStartTime = true;
+                    }
+                    else if (parameters[j] == "EndDate") {
+                        var exactenddate = new Date(unescape(parameters[j + 1]));
+                        relEndDate = exactenddate;
+                        commitChangeEndDate = true;
+                        commitChangeEndTime = true;
+                    }
+                }
+            }
+            if (commitChangeStartDate || commitChangeStartTime) {
+                var now = new Date();
+                relStartDate.setMinutes(relStartDate.getMinutes() - now.getTimezoneOffset());
+                $("#dateTime-startdate").val(relStartDate.toISOString().substring(0, 19));
+            }
+            else if (sessionCachedStartDate != null) {
+                $("#dateTime-startdate").val(sessionStorage.getItem("QueryStartDate"));
+            }
+            if (commitChangeEndDate || commitChangeEndTime) {
+                var now = new Date();
+                relEndDate.setMinutes(relEndDate.getMinutes() - now.getTimezoneOffset());
+                $("#dateTime-enddate").val(relEndDate.toISOString().substring(0, 19));
+            }
+            else if (sessionCachedEndDate != null) {
+                $("#dateTime-enddate").val(sessionStorage.getItem("QueryEndDate"));
+            }
+        }
+        // If we have session-cached calendar values, make sure we don't override them in future calendar setup
+        if (sessionCachedStartDate != null && sessionCachedEndDate != null && !commitChangeEndDate && !commitChangeEndTime && !commitChangeStartDate && !commitChangeStartTime) {
+            $("#dateTime-startdate").val(sessionStorage.getItem("QueryStartDate"));
+            $("#dateTime-enddate").val(sessionStorage.getItem("QueryEndDate"));
+            commitChangeStartDate = true;
+            commitChangeStartTime = true;
+            commitChangeEndDate = true;
+            commitChangeEndTime = true;
+        }
+        // Configure Calendars using defaults; if we have not already committed to changing them
+        var defaultStartDate = "-1d";
+        var defaultStartTime = "soh";
+        var defaultEndDate = "*";
+        var defaultEndTime = "soh";
+        ConfigureCalendarDefaultValues(defaultStartDate, commitChangeStartDate, defaultStartTime, commitChangeStartTime, defaultEndDate, commitChangeEndDate, defaultEndTime, commitChangeEndTime);        
+
+        ConfigureCalendarBounds("-3y","*");
+        //$("#dateTime-enddate").attr("max", relativeDay("*", maxdate1));
+        //$("#RefreshAllGraphs").click();
+
+        // Initialise Event Listener so that a manual click updates the session cached start and end query dates
+        $("#RefreshAllGraphs").click(function (e) {
+            if (e.hasOwnProperty('originalEvent')) {
+                sessionStorage.setItem("QueryStartDate", $("#dateTime-startdate").val());
+                sessionStorage.setItem("QueryEndDate", $("#dateTime-enddate").val());
+            }
+        });
+    });
+
+
+    // Create a new page
+function CreateNewPagePrompt() {
+    var NewPageURL = "gHostModules/DisplayBuilder/NewPageForm";
+    $.ajax({
+        url: NewPageURL,
+        type: 'GET',
+        data: { },
+        success: function (shape) {
+            // Update Value Widget HTML
+            $("#fullscreenWidgetModal").html(shape);
+            $("#fullscreenWidgetModal").removeClass('hidden');
+
+        },
+        error: function () {
+            // TODO Handle error
+        }
+    });
+    
+}
+    </script>
+
+</body>

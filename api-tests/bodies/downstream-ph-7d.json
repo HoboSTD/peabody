@@ -1,0 +1,14 @@
+{
+  "trends": [
+    {
+      "starttimestamp": "2026-09-18T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Downstream|pH",
+      "id": "t1",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    }
+  ]
+}

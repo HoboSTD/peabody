@@ -1,0 +1,24 @@
+{
+  "trends": [
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|pH|Low Limit",
+      "id": "low",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|pH|High Limit",
+      "id": "high",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    }
+  ]
+}

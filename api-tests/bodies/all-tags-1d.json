@@ -1,0 +1,184 @@
+{
+  "trends": [
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Upstream|pH",
+      "id": "Upstream|pH",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Upstream|Specific Electrical Conductivity|Display",
+      "id": "Upstream|Specific Electrical Conductivity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Upstream|Temperature",
+      "id": "Upstream|Temperature",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Upstream|Turbidity|Display",
+      "id": "Upstream|Turbidity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|pH",
+      "id": "LDP7 Water Treatment Plant|pH",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|Specific Electrical Conductivity|Display",
+      "id": "LDP7 Water Treatment Plant|Specific Electrical Conductivity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|Temperature",
+      "id": "LDP7 Water Treatment Plant|Temperature",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|Turbidity|Display",
+      "id": "LDP7 Water Treatment Plant|Turbidity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP7 Water Treatment Plant|Instantaneous Volume Discharged",
+      "id": "LDP7 Water Treatment Plant|Instantaneous Volume Discharged",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP8 Turkeys Nest|pH",
+      "id": "LDP8 Turkeys Nest|pH",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP8 Turkeys Nest|Specific Electrical Conductivity|Display",
+      "id": "LDP8 Turkeys Nest|Specific Electrical Conductivity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP8 Turkeys Nest|Temperature",
+      "id": "LDP8 Turkeys Nest|Temperature",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP8 Turkeys Nest|Turbidity|Display",
+      "id": "LDP8 Turkeys Nest|Turbidity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\LDP8 Turkeys Nest|Instantaneous Volume Discharged",
+      "id": "LDP8 Turkeys Nest|Instantaneous Volume Discharged",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Downstream|pH",
+      "id": "Downstream|pH",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Downstream|Specific Electrical Conductivity|Display",
+      "id": "Downstream|Specific Electrical Conductivity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Downstream|Temperature",
+      "id": "Downstream|Temperature",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    },
+    {
+      "starttimestamp": "2026-09-24T18:00:00",
+      "endtimestamp": "2026-09-25T18:00:00",
+      "tagName": "Metropolitan Water Monitoring\\Downstream|Turbidity|Display",
+      "id": "Downstream|Turbidity|Display",
+      "PerformRounding": "False",
+      "DecimalPlaces": 0,
+      "BoundaryMode": "",
+      "SamplingInterval": ""
+    }
+  ]
+}

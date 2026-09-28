@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Created by the extractor (README: Development)
+data/
+backups/
+output/
+state/
+logs/
+
+# Session files the API tests create; they contain session tokens (README: Sensitive files)
+api-tests/cookies.txt
+api-tests/token.txt
+api-tests/page.html
+
+# Saved API test responses: real site data, kept locally only (README: Layout)
+api-tests/results/
+
+# Safeguards: data, logs and temporary files outside the folders above
+*.db
+*.db.gz
+*.log
+*.csv.tmp
+
+# Editor
+.vscode/
