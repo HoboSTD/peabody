@@ -1,0 +1,11 @@
+# Dependabot opens a PR when a pinned requirement or a workflow action has a new version (README: Layout).
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
