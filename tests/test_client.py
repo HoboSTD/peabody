@@ -374,6 +374,13 @@ class BackfillTest(CliCase):
         self.assertLess(logs.index(next(l for l in logs if "backup: wrote" in l)),
                         logs.index(next(l for l in logs if "GetTrendValues" in l)))
 
+    def test_local_backups_can_be_turned_off(self):
+        with mock.patch.object(config, "LOCAL_BACKUPS", False):
+            self.run_cli("fetch", [self.ok()])
+            self.assertEqual(self.run_cli("fetch", [self.ok()])[0], 0)
+            self.assertEqual(self.run_cli("backfill --from 2026-09-01 --to 2026-09-10", [self.ok()])[0], 0)
+        self.assertFalse((self.dir / "backups").exists())
+
     def test_failure_keeps_earlier_months_and_says_where_to_resume(self):
         bad = lambda: response(400, fixture("http-400-error-page.html"))
         code, logs = self.run_cli("backfill --from 2026-07-15 --to 2026-09-10", [self.ok(), bad(), bad()])

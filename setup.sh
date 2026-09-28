@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Set up the extractor in this folder (README: Quick start; Running it every hour). Safe to run again.
+# Set up the extractor in this folder (README: Quick start; Running it on your own machine). Safe to run again.
 #
 #   ./setup.sh           create .venv, install requirements, create the working folders
 #   ./setup.sh --cron    also add the hourly fetch to the user's crontab (only if it isn't there)

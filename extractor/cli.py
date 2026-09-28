@@ -61,7 +61,8 @@ def fetch(args):
     readings = client.get_trends(session, end - timedelta(hours=24), end)
     conn = store.connect(config.DB_PATH)
     try:
-        backup.daily(conn, config.BACKUP_DIR)
+        if config.LOCAL_BACKUPS:
+            backup.daily(conn, config.BACKUP_DIR)
         store.upsert(conn, readings)
         export.write_all(conn, config.OUTPUT_DIR)
     finally:
@@ -104,7 +105,8 @@ def backfill(args):
     session = Session()
     conn = store.connect(config.DB_PATH)
     try:
-        backup.before_backfill(conn, config.BACKUP_DIR)
+        if config.LOCAL_BACKUPS:
+            backup.before_backfill(conn, config.BACKUP_DIR)
         total = 0
         for i, (start, stop) in enumerate(chunks):
             if i:

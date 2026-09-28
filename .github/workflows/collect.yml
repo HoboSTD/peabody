@@ -1,0 +1,107 @@
+# Collects the data on GitHub (README: Running on GitHub). Every hour it runs `fetch`. It can also be started by hand
+# (Actions > collect > Run workflow) to run `backfill` or `export`.
+#
+# The database and CSVs live in the `data` release. Each run downloads the database, runs the command, checks the
+# result and uploads the new files. The first run of each month (Sydney time) first copies the database, unchanged,
+# into the `backups` release.
+name: collect
+
+on:
+  schedule:
+    - cron: "17 * * * *"  # hourly, off the hour, when GitHub's scheduler is less busy
+  workflow_dispatch:
+    inputs:
+      command:
+        type: choice
+        options: [fetch, backfill, export]
+        default: fetch
+      from:
+        description: "backfill only: --from YYYY-MM-DD (blank for the default)"
+        required: false
+      to:
+        description: "backfill only: --to YYYY-MM-DD (blank for now)"
+        required: false
+
+permissions:
+  contents: write  # upload to the releases
+  actions: write   # keep the schedule enabled (last step)
+
+concurrency:
+  group: collect  # one run at a time: a run that starts while another is going waits for it
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  EXTRACTOR_LOCAL_BACKUPS: "off"  # the backups release keeps a monthly copy instead
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+
+      # No database means something is wrong with the release: stop rather than start again from empty and
+      # overwrite it (README: Restoring the database on GitHub).
+      - name: Download the database
+        run: |
+          mkdir -p data
+          gh release download data --pattern readings.db.gz --dir data
+          gunzip --keep data/readings.db.gz
+
+      - name: Keep this month's backup
+        run: |
+          name="readings-$(TZ=Australia/Sydney date +%Y-%m).db.gz"
+          if ! gh release view backups --json assets --jq '.assets[].name' | grep -qx "$name"; then
+            cp data/readings.db.gz "$name"
+            gh release upload backups "$name"
+          fi
+
+      # The database is only uploaded if it's intact and hasn't lost anything: the program never deletes rows or
+      # removes values (README: Storage).
+      - name: Run and check
+        id: run
+        env:
+          COMMAND: ${{ inputs.command || 'fetch' }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+        run: |
+          stats() {
+            python -c 'import sqlite3, sys; c = sqlite3.connect(sys.argv[1]); print(c.execute("PRAGMA integrity_check").fetchone()[0], *c.execute("SELECT COUNT(*), COUNT(value) FROM readings").fetchone())' data/readings.db
+          }
+          args=("$COMMAND")
+          if [ "$COMMAND" = backfill ]; then
+            if [ -n "$FROM" ]; then args+=(--from "$FROM"); fi
+            if [ -n "$TO" ]; then args+=(--to "$TO"); fi
+          fi
+          read -r _ rows_before values_before < <(stats)
+          python -m extractor "${args[@]}"
+          read -r ok rows values < <(stats)
+          echo "database: $rows rows, $values with values (before: $rows_before, $values_before)"
+          if [ "$ok" != ok ] || [ "$rows" -lt "$rows_before" ] || [ "$values" -lt "$values_before" ]; then
+            echo "::error::database check failed (integrity: $ok); not uploading"
+            exit 1
+          fi
+          if [ "$COMMAND" = export ] || [ "$rows $values" != "$rows_before $values_before" ]; then
+            echo "upload=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload the database and CSVs
+        if: steps.run.outputs.upload == 'yes'
+        run: |
+          gzip --force --keep data/readings.db
+          gh release upload data data/readings.db.gz output/*.csv --clobber
+
+      # GitHub turns off scheduled workflows in a public repo after 60 days without activity in it. Enabling the
+      # workflow through the API counts as activity, so this keeps the schedule running.
+      - name: Keep the schedule enabled
+        if: github.event_name == 'schedule'
+        run: gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/collect.yml/enable"

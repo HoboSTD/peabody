@@ -1,4 +1,5 @@
 """Sites, tags, paths and settings (README: What's collected; Settings)."""
+import os
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -10,6 +11,8 @@ BACKUP_DIR = REPO / "backups"
 OUTPUT_DIR = REPO / "output"
 
 LOCAL_TIMEZONE = "Australia/Sydney"  # backup dates, the daily site check, timestamp_local in the CSVs
+# Off on GitHub, where the release keeps a monthly copy instead (README: Running on GitHub)
+LOCAL_BACKUPS = os.environ.get("EXTRACTOR_LOCAL_BACKUPS", "on") != "off"
 BACKUP_KEEP_DAYS = 7  # keep every backup this recent; older ones only the earliest of each month
 BACKFILL_PAUSE = 5  # seconds between backfill requests (README: Being polite to the server)
 STALE_HOURS = 12  # fetch warns if the newest reading is older than this (normally about 3 hours)

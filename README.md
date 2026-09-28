@@ -6,9 +6,24 @@ sites around the Metropolitan Coal Mine. It stores them in a local SQLite databa
 This is an independent project. It isn't affiliated with or endorsed by Peabody, and it uses the same requests
 the public page makes in a browser (see [API reference](#api-reference)).
 
-**Status:** complete and working. The full history (from 2023-08-08) loads in about 5 minutes, and the CSVs have
-been checked against the source. The collected data isn't in this repo: run the [Quick start](#quick-start) to
-build your own copy.
+**Status:** complete and working. It runs every hour on GitHub Actions and publishes the full history (from
+2023-08-08) to the [`data` release](https://github.com/HoboSTD/peabody/releases/tag/data). The CSVs have been
+checked against the source.
+
+## Download the data
+
+The latest files, updated every hour:
+
+| Site | CSV |
+|---|---|
+| Upstream | <https://github.com/HoboSTD/peabody/releases/download/data/upstream.csv> |
+| LDP7 Water Treatment Plant | <https://github.com/HoboSTD/peabody/releases/download/data/ldp7-water-treatment-plant.csv> |
+| LDP8 Turkeys Nest | <https://github.com/HoboSTD/peabody/releases/download/data/ldp8-turkeys-nest.csv> |
+| Downstream | <https://github.com/HoboSTD/peabody/releases/download/data/downstream.csv> |
+| All four, as the SQLite database (gzip) | <https://github.com/HoboSTD/peabody/releases/download/data/readings.db.gz> |
+
+The links don't change. See [CSV output](#csv-output) for the columns and [About the data](#about-the-data) for
+quirks worth knowing. The asset dates on the release page show when each file was last updated.
 
 Python 3.10+ with `requests` and the standard library. No other dependencies.
 
@@ -21,7 +36,9 @@ Python 3.10+ with `requests` and the standard library. No other dependencies.
 .venv/bin/python -m extractor fetch           # collect the last 24 hours (what cron runs every hour)
 ```
 
-The CSVs are then in `output/`. To collect automatically, see [Running it every hour](#running-it-every-hour).
+The CSVs are then in `output/`. This builds a copy on your own machine, separate from the one on GitHub. To
+collect automatically, see [Running on GitHub](#running-on-github) or
+[Running it on your own machine](#running-it-on-your-own-machine).
 
 ## Commands
 
@@ -80,7 +97,65 @@ rounded, aligned or cleaned. See [About the data](#about-the-data) for quirks wo
   leaves the previous one in place.
 - With the full history, each file has about 109,000 rows (6–10 MB). Rewriting all four takes about 3 seconds.
 
-## Running it every hour
+## Running on GitHub
+
+[.github/workflows/collect.yml](.github/workflows/collect.yml) runs `fetch` every hour, at 17 minutes past. GitHub
+sometimes starts scheduled runs late; that's harmless, because each `fetch` covers the last 24 hours. Each run:
+
+1. Downloads `readings.db.gz` from the `data` release. If it isn't there, the run fails rather than starting again
+   from empty (see [Restoring the database on GitHub](#restoring-the-database-on-github)).
+2. On the first run of each month (Sydney time), copies the database, unchanged, to the
+   [`backups` release](https://github.com/HoboSTD/peabody/releases/tag/backups) as `readings-YYYY-MM.db.gz`.
+3. Runs the command, then checks the database: SQLite's integrity check must pass, and the number of rows and of
+   values must not have gone down. If the check fails, nothing is uploaded and the run fails.
+4. Uploads `readings.db.gz` and the four CSVs to the `data` release, replacing the old ones. A `fetch` that stored
+   nothing new uploads nothing.
+
+Things to know:
+- **Running a command by hand:** Actions > collect > Run workflow, then choose `fetch`, `backfill` (with optional
+  `--from` and `--to` dates) or `export`. Use `backfill` after an outage of more than 24 hours.
+- **Failures are emailed** to you by GitHub. The log of every run is under Actions > collect, kept for 90 days.
+  Warnings, such as stale data, only appear in those logs.
+- **One run at a time:** a run that starts while another is going waits for it to finish.
+- **The 60-day rule:** GitHub turns off scheduled workflows in a public repo after 60 days with no activity. The
+  last step of each run re-enables the workflow through the API, which counts as activity. If it's turned off
+  anyway, GitHub emails you; turn it back on under Actions > collect, and `backfill` the gap.
+- **Local daily backups are off** on GitHub (`EXTRACTOR_LOCAL_BACKUPS=off`), because the runner's files are thrown
+  away after each run.
+- **The site-list check runs every hour** on GitHub instead of once a day, because `state/` isn't kept between runs.
+  It's one extra request of about 2 KB.
+- **Cost:** nothing. Actions minutes are free for public repos, and so are release downloads. A run takes about a
+  minute.
+
+### Restoring the database on GitHub
+
+If `readings.db.gz` is missing from the `data` release, or holds bad data, upload a good copy from the `backups`
+release, then fill the gap:
+
+```bash
+gh release download backups --pattern readings-2026-09.db.gz     # the latest good month
+mv readings-2026-09.db.gz readings.db.gz
+gh release upload data readings.db.gz --clobber
+```
+
+Then run `backfill` from Actions with `--from` set to the backup's month, e.g. `2026-09-01`.
+
+### Working on a local copy
+
+The copy on GitHub is the main one. To get it on your own machine (with no local runs in progress):
+
+```bash
+gh release download data --pattern readings.db.gz --dir data --clobber && gunzip -f data/readings.db.gz
+.venv/bin/python -m extractor export
+```
+
+Changes made locally aren't uploaded. Don't upload a local database to the `data` release unless you mean to
+replace GitHub's copy, as in [Restoring the database on GitHub](#restoring-the-database-on-github).
+
+## Running it on your own machine
+
+Instead of GitHub, cron can run `fetch` on your own machine every hour. Don't run both: they'd keep two separate
+copies of the database.
 
 1. **Install and start cron.** It isn't installed by default on some systems:
    ```bash
@@ -125,6 +200,9 @@ Things to know:
 
 ## Backups and restore
 
+On GitHub, the `backups` release keeps one copy per month instead (see [Running on GitHub](#running-on-github)). The
+rest of this section is about runs on your own machine.
+
 - **When:**
   - Before the first write of each day (Sydney date), the database is copied to
     `backups/readings-YYYY-MM-DD.db.gz`.
@@ -138,7 +216,7 @@ Things to know:
   - delete the rest. Other files in `backups/` are never touched
 
   That's about 90 MB for the dailies, plus 13 MB for each month that passes: roughly 250 MB after a year.
-- **To restore:** stop cron (see [Running it every hour](#running-it-every-hour)), then
+- **To restore:** stop cron (see [Running it on your own machine](#running-it-on-your-own-machine)), then
   `gunzip -c backups/<file>.db.gz > data/readings.db`, then run `backfill --from <the backup's date>` to catch up.
 
 The CSVs aren't a backup: they're rewritten from the database on every run, so they'd carry any bad data too.
@@ -181,8 +259,9 @@ history with `backfill`.
 
 ### Moving to another machine
 
-Clone the repo, run `./setup.sh` (and `--cron` if wanted), then copy over `data/readings.db` (or restore a backup)
-and run `backfill --from <last day collected>`. Or just run `backfill` to start again from scratch.
+Clone the repo, run `./setup.sh` (and `--cron` if wanted), then copy over `data/readings.db` (or restore a backup,
+or download GitHub's copy as in [Working on a local copy](#working-on-a-local-copy)) and run
+`backfill --from <last day collected>`. Or just run `backfill` to start again from scratch.
 
 ## How it works
 
@@ -241,7 +320,8 @@ no partial write.
 
 ### Being polite to the server
 
-- One request an hour from `fetch`, plus one small site-list request (about 2 KB) a day.
+- One request an hour from `fetch`, plus one small site-list request (about 2 KB): once a day on your own machine,
+  every hour on GitHub.
 - `backfill`: one request every 5 seconds.
 - User-Agent: a current desktop Chrome string (`USER_AGENT` in `config.py`).
 - This is Peabody's public disclosure page.
@@ -276,8 +356,10 @@ Observed while building this (September 2026):
 
 ## Known limitations
 
-- **No alerts:** problems appear only in `logs/fetch.log`. Nothing is emailed or sent.
-- **cron needs the machine on:** gaps over 24 hours need a manual `backfill`.
+- **Alerts only for failures:** on GitHub, a failed run is emailed, but warnings (such as stale data) only appear in
+  the run logs. On your own machine, everything is only in `logs/fetch.log`.
+- **Gaps over 24 hours need a manual `backfill`:** after a GitHub outage, a disabled schedule, or, on your own
+  machine, time spent switched off or asleep.
 - **Corrections by Peabody are ignored** by design, unless accepted by hand.
 - **Null and missing look the same in the CSVs** (both empty cells).
 - **Unknown token lifetime and possible bot protection:** handled by refreshing on failure. A Cloudflare challenge
@@ -367,6 +449,7 @@ list just means no data in that range. `errors` (top level and per trend) was al
 | [setup.sh](setup.sh), [requirements.txt](requirements.txt) | Setup. `requests` and `tzdata` are pinned |
 | [tests/](tests/) | Unit tests, with saved API responses in `tests/fixtures/` |
 | [api-tests/](api-tests/) | The original API tests: plan, request bodies, findings and `summarise.py`. The saved responses in `results/` are kept locally and git-ignored |
+| [.github/workflows/collect.yml](.github/workflows/collect.yml) | Collects every hour and publishes the data (see [Running on GitHub](#running-on-github)) |
 | [.github/workflows/tests.yml](.github/workflows/tests.yml) | Runs the tests on GitHub |
 | [.github/workflows/live-check.yml](.github/workflows/live-check.yml) | Runs `check` against the live site from GitHub, started by hand. Stores nothing |
 | [.github/dependabot.yml](.github/dependabot.yml) | Monthly update PRs for the pinned requirements and the workflow actions |
@@ -388,6 +471,7 @@ In [extractor/config.py](extractor/config.py):
 | Setting | Default | Meaning |
 |---|---|---|
 | `SITES`, `WATER_QUALITY`, `FLOW` | the 4 sites and 5 parameters | What's collected |
+| `LOCAL_BACKUPS` | on | Local backups (see [Backups and restore](#backups-and-restore)). Off when the environment variable `EXTRACTOR_LOCAL_BACKUPS` is `off`, as on GitHub |
 | `LOCAL_TIMEZONE` | `Australia/Sydney` | For backup dates, the daily site check and `timestamp_local` |
 | `BACKUP_KEEP_DAYS` | 7 | Days of daily backups kept in full |
 | `BACKFILL_PAUSE` | 5 | Seconds between backfill requests |
@@ -404,7 +488,7 @@ without writing if the existing crontab can't be read. It's safe to run again.
 .venv/bin/python -m unittest
 ```
 
-67 tests, standard library only, no network. GitHub Actions runs them on every push and pull request, on Python
+68 tests, standard library only, no network. GitHub Actions runs them on every push and pull request, on Python
 3.10 and 3.13 ([.github/workflows/tests.yml](.github/workflows/tests.yml)). The fixtures are real responses: `all-series-1-day.json` (T05),
 `empty-values.json` (T09), `http-400-error-page.html` (T02), `server-exception.json` (T13) and `site-list.json`
 (a `GetMappingData` response from 2026-09-27).
@@ -415,7 +499,7 @@ without writing if the existing crontab can't be read. It's safe to run again.
 | `test_backup.py` | Backups, restoring one, and retention |
 | `test_export.py` | CSV layout, rows exactly as stored, Sydney offsets across daylight saving, a failed write |
 | `test_sites.py` | The site-list check |
-| `test_client.py` | Response checks, token refresh and retry, all four commands, the run lock and the stale-data warning |
+| `test_client.py` | Response checks, token refresh and retry, all four commands, the run lock, the stale-data warning and turning local backups off |
 
 ### How it was checked
 
@@ -433,7 +517,8 @@ without writing if the existing crontab can't be read. It's safe to run again.
 
 `state/session.json` holds the current session token and cookie. Re-running the API tests in `api-tests/` creates
 `cookies.txt`, `token.txt` and `page.html` there, which hold them too. All are in `.gitignore`, so they stay out of
-version control. Don't share them. The GitHub repo also has secret scanning and push protection turned on.
+version control. Don't share them. The GitHub repo also has secret scanning and push protection turned on. On
+GitHub, the session is fetched fresh in each run and thrown away with the runner: it's never uploaded.
 
 The browser captures used to work out the API (`website.mhtml`, `har`, `GetTrendValues`) were deleted on 2026-09-28,
 once everything learned from them was in this README.
