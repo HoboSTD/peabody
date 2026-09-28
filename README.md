@@ -6,13 +6,13 @@ sites around the Metropolitan Coal Mine. It stores them in a local SQLite databa
 This is an independent project. It isn't affiliated with or endorsed by Peabody, and it uses the same requests
 the public page makes in a browser (see [API reference](#api-reference)).
 
-**Status:** complete and working. It runs every hour on GitHub Actions and publishes the full history (from
+**Status:** complete and working. It runs every 3 hours on GitHub Actions and publishes the full history (from
 2023-08-08) to the [`data` release](https://github.com/HoboSTD/peabody/releases/tag/data). The CSVs have been
 checked against the source.
 
 ## Download the data
 
-The latest files, updated every hour:
+The latest files, updated every 3 hours:
 
 | Site | CSV |
 |---|---|
@@ -47,7 +47,7 @@ Run as `.venv/bin/python -m extractor <command>` from the repo folder.
 | Command | What it does |
 |---|---|
 | `check` | Fetches the last 24 hours and prints, for each of the 18 series, how many readings came back and the latest value. Also checks the site list. Doesn't touch the database or CSVs |
-| `fetch` | Fetches the last 24 hours, stores new readings and rewrites the CSVs. Makes the day's backup before its first write each day. Meant to run every hour |
+| `fetch` | Fetches the last 24 hours, stores new readings and rewrites the CSVs. Makes the day's backup before its first write each day. Meant to run on a schedule: every 3 hours on GitHub, or hourly by cron |
 | `backfill [--from YYYY-MM-DD] [--to YYYY-MM-DD]` | Fetches history month by month and stores it, then rewrites the CSVs. Makes a backup first. `--from` defaults to 2023-01-01 and `--to` to now; both dates mean 00:00 UTC |
 | `export` | Rewrites the CSVs from the database. No network |
 
@@ -99,8 +99,10 @@ rounded, aligned or cleaned. See [About the data](#about-the-data) for quirks wo
 
 ## Running on GitHub
 
-[.github/workflows/collect.yml](.github/workflows/collect.yml) runs `fetch` every hour, at 17 minutes past. GitHub
-sometimes starts scheduled runs late; that's harmless, because each `fetch` covers the last 24 hours. Each run:
+[.github/workflows/collect.yml](.github/workflows/collect.yml) runs `fetch` every 3 hours, at 00:17, 03:17, 06:17
+UTC and so on. The newest data published is then at most about 6 hours old (3 hours between runs, plus the source's
+usual 3-hour delay). GitHub sometimes starts scheduled runs late, or occasionally skips one; that's harmless,
+because each `fetch` covers the last 24 hours, so up to seven runs in a row can be missed without a gap. Each run:
 
 1. Downloads `readings.db.gz` from the `data` release. If it isn't there, the run fails rather than starting again
    from empty (see [Restoring the database on GitHub](#restoring-the-database-on-github)).
@@ -114,6 +116,10 @@ sometimes starts scheduled runs late; that's harmless, because each `fetch` cove
 Things to know:
 - **Running a command by hand:** Actions > collect > Run workflow, then choose `fetch`, `backfill` (with optional
   `--from` and `--to` dates) or `export`. Use `backfill` after an outage of more than 24 hours.
+- **If scheduled runs stop, nothing is emailed.** GitHub only emails when a run starts and fails, not when runs
+  don't start at all (during a GitHub outage, or if the schedule is turned off or stops being picked up). Check
+  now and then that the asset dates on the [`data` release](https://github.com/HoboSTD/peabody/releases/tag/data)
+  are less than a day old. If the schedule seems stuck, turn the workflow off and on again under Actions > collect.
 - **Failures are emailed** to you by GitHub. The log of every run is under Actions > collect, kept for 90 days.
   Warnings, such as stale data, only appear in those logs.
 - **One run at a time:** a run that starts while another is going waits for it to finish.
@@ -122,7 +128,7 @@ Things to know:
   anyway, GitHub emails you; turn it back on under Actions > collect, and `backfill` the gap.
 - **Local daily backups are off** on GitHub (`EXTRACTOR_LOCAL_BACKUPS=off`), because the runner's files are thrown
   away after each run.
-- **The site-list check runs every hour** on GitHub instead of once a day, because `state/` isn't kept between runs.
+- **The site-list check runs with every run** on GitHub instead of once a day, because `state/` isn't kept between runs.
   It's one extra request of about 2 KB.
 - **Cost:** nothing. Actions minutes are free for public repos, and so are release downloads. A run takes about a
   minute.
@@ -270,7 +276,7 @@ or download GitHub's copy as in [Working on a local copy](#working-on-a-local-co
 The program calls the same JSON endpoint the page uses, `GetTrendValues`, directly: the page's HTML contains no
 readings. One request covers all 18 series.
 
-- **`fetch`** asks for the last 24 hours. The overlap between hourly runs picks up readings that arrive late
+- **`fetch`** asks for the last 24 hours. The overlap between runs picks up readings that arrive late
   (normally about 3 hours after the fact). A run downloads about 40 KB.
 - **`backfill`** walks from `--from` to `--to` a calendar month (UTC) at a time, about 1 MB per request, with 5
   seconds between requests. Each month is stored before the next is requested. If one fails, the months already
@@ -320,8 +326,8 @@ no partial write.
 
 ### Being polite to the server
 
-- One request an hour from `fetch`, plus one small site-list request (about 2 KB): once a day on your own machine,
-  every hour on GitHub.
+- One request per `fetch`, plus one small site-list request (about 2 KB). On GitHub that's 8 of each a day (every
+  3 hours); on your own machine, 24 fetches (hourly by cron) and one site-list request a day.
 - `backfill`: one request every 5 seconds.
 - User-Agent: a current desktop Chrome string (`USER_AGENT` in `config.py`).
 - This is Peabody's public disclosure page.
@@ -357,7 +363,7 @@ Observed while building this (September 2026):
 ## Known limitations
 
 - **Alerts only for failures:** on GitHub, a failed run is emailed, but warnings (such as stale data) only appear in
-  the run logs. On your own machine, everything is only in `logs/fetch.log`.
+  the run logs, and runs that stop happening aren't reported at all. On your own machine, everything is only in `logs/fetch.log`.
 - **Gaps over 24 hours need a manual `backfill`:** after a GitHub outage, a disabled schedule, or, on your own
   machine, time spent switched off or asleep.
 - **Corrections by Peabody are ignored** by design, unless accepted by hand.
@@ -449,7 +455,7 @@ list just means no data in that range. `errors` (top level and per trend) was al
 | [setup.sh](setup.sh), [requirements.txt](requirements.txt) | Setup. `requests` and `tzdata` are pinned |
 | [tests/](tests/) | Unit tests, with saved API responses in `tests/fixtures/` |
 | [api-tests/](api-tests/) | The original API tests: plan, request bodies, findings and `summarise.py`. The saved responses in `results/` are kept locally and git-ignored |
-| [.github/workflows/collect.yml](.github/workflows/collect.yml) | Collects every hour and publishes the data (see [Running on GitHub](#running-on-github)) |
+| [.github/workflows/collect.yml](.github/workflows/collect.yml) | Collects every 3 hours and publishes the data (see [Running on GitHub](#running-on-github)) |
 | [.github/workflows/tests.yml](.github/workflows/tests.yml) | Runs the tests on GitHub |
 | [.github/workflows/live-check.yml](.github/workflows/live-check.yml) | Runs `check` against the live site from GitHub, started by hand. Stores nothing |
 | [.github/dependabot.yml](.github/dependabot.yml) | Monthly update PRs for the pinned requirements and the workflow actions |

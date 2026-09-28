@@ -1,4 +1,4 @@
-# Collects the data on GitHub (README: Running on GitHub). Every hour it runs `fetch`. It can also be started by hand
+# Collects the data on GitHub (README: Running on GitHub). Every 3 hours it runs `fetch`. It can also be started by hand
 # (Actions > collect > Run workflow) to run `backfill` or `export`.
 #
 # The database and CSVs live in the `data` release. Each run downloads the database, runs the command, checks the
@@ -8,7 +8,7 @@ name: collect
 
 on:
   schedule:
-    - cron: "17 * * * *"  # hourly, off the hour, when GitHub's scheduler is less busy
+    - cron: "17 */3 * * *"  # every 3 hours, off the hour, when GitHub's scheduler is less busy
   workflow_dispatch:
     inputs:
       command:
