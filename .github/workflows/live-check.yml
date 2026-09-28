@@ -1,0 +1,19 @@
+# Runs `check` against the live site from a GitHub runner, started by hand (Actions > live-check > Run workflow).
+# It tests whether the site answers requests from GitHub's servers. Nothing is stored or uploaded.
+name: live-check
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+      - run: python -m extractor check

@@ -368,6 +368,7 @@ list just means no data in that range. `errors` (top level and per trend) was al
 | [tests/](tests/) | Unit tests, with saved API responses in `tests/fixtures/` |
 | [api-tests/](api-tests/) | The original API tests: plan, request bodies, findings and `summarise.py`. The saved responses in `results/` are kept locally and git-ignored |
 | [.github/workflows/tests.yml](.github/workflows/tests.yml) | Runs the tests on GitHub |
+| [.github/workflows/live-check.yml](.github/workflows/live-check.yml) | Runs `check` against the live site from GitHub, started by hand. Stores nothing |
 | [.github/dependabot.yml](.github/dependabot.yml) | Monthly update PRs for the pinned requirements and the workflow actions |
 
 Everything the program creates stays inside the repo folder and is git-ignored:
