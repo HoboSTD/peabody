@@ -21,9 +21,11 @@ The latest files, updated every 3 hours:
 | LDP8 Turkeys Nest | <https://github.com/HoboSTD/peabody/releases/download/data/ldp8-turkeys-nest.csv> |
 | Downstream | <https://github.com/HoboSTD/peabody/releases/download/data/downstream.csv> |
 | All four, as the SQLite database (gzip) | <https://github.com/HoboSTD/peabody/releases/download/data/readings.db.gz> |
+| Pollution-indicator metrics (JSON) | <https://github.com/HoboSTD/peabody/releases/download/data/metrics.json> |
 
-The links don't change. See [CSV output](#csv-output) for the columns and [About the data](#about-the-data) for
-quirks worth knowing. The asset dates on the release page show when each file was last updated.
+The links don't change. See [CSV output](#csv-output) for the columns, [Metrics](#metrics) for the JSON, and
+[About the data](#about-the-data) for quirks worth knowing. The asset dates on the release page show when each
+file was last updated.
 
 Python 3.10+ with `requests` and the standard library. No other dependencies.
 
@@ -47,9 +49,10 @@ Run as `.venv/bin/python -m extractor <command>` from the repo folder.
 | Command | What it does |
 |---|---|
 | `check` | Fetches the last 24 hours and prints, for each of the 18 series, how many readings came back and the latest value. Also checks the site list. Doesn't touch the database or CSVs |
-| `fetch` | Fetches the last 24 hours, stores new readings and rewrites the CSVs. Makes the day's backup before its first write each day. Meant to run on a schedule: every 3 hours on GitHub, or hourly by cron |
-| `backfill [--from YYYY-MM-DD] [--to YYYY-MM-DD]` | Fetches history month by month and stores it, then rewrites the CSVs. Makes a backup first. `--from` defaults to 2023-01-01 and `--to` to now; both dates mean 00:00 UTC |
+| `fetch` | Fetches the last 24 hours, stores new readings and rewrites the CSVs and `metrics.json`. Makes the day's backup before its first write each day. Meant to run on a schedule: every 3 hours on GitHub, or hourly by cron |
+| `backfill [--from YYYY-MM-DD] [--to YYYY-MM-DD]` | Fetches history month by month and stores it, then rewrites the CSVs and `metrics.json`. Makes a backup first. `--from` defaults to 2023-01-01 and `--to` to now; both dates mean 00:00 UTC |
 | `export` | Rewrites the CSVs from the database. No network |
+| `analyze` | Rewrites `output/metrics.json` from the database (see [Metrics](#metrics)). No network |
 
 Exit codes: `0` success; `1` the run failed, or was skipped because another run was in progress; `2` bad arguments.
 Messages go to standard error; see [Log messages](#log-messages).
@@ -97,6 +100,70 @@ rounded, aligned or cleaned. See [About the data](#about-the-data) for quirks wo
   leaves the previous one in place.
 - With the full history, each file has about 109,000 rows (6–10 MB). Rewriting all four takes about 3 seconds.
 
+## Metrics
+
+`extractor/metrics.py` computes a handful of pollution-indicator metrics from the stored readings — no network
+calls, nothing extra fetched. The constants below live in `config.py` and were chosen by looking at the real
+collected data (percentiles, known fault values, a publicly documented spill), not guessed.
+
+- **Sanitizing:** a small fraction of readings are physically impossible sensor faults, not real values — for
+  example pH readings as low as -156,931, or LDP7 specific conductivity jumping into the hundreds of thousands of
+  µS/cm. Every value is checked against `SANE_BOUNDS` before it's used in a metric:
+
+  | Parameter | Sane range | Why |
+  |---|---|---|
+  | `ph` | 0–14 | the pH scale itself |
+  | `specific_conductivity` | 10–10,000 µS/cm | below 10: the sensor reading (near) zero, not real stream water (seen for hours at a time at every site); above 10,000: real faults jump straight into the hundreds of thousands |
+  | `temperature` | -5–45 °C | real faults read in the hundreds or thousands of degrees |
+  | `turbidity` | 0–20,000 NTU | turbidity can't be negative; real faults are deeply negative (down to -11 trillion), not near zero |
+
+  A null reading (no record, or the server sent `null`) is never "sane" — that's a data-health question, not a
+  bad-value one. `flow_volume` has no bounds defined and is never rejected.
+
+- **Downstream:Upstream conductivity ratio:** the core signal, since dissolved-solids pollution raises specific
+  conductivity. Computed only from sanitized readings at timestamps both sites have. In the full history so far,
+  the typical (median) ratio is already about **1.9x** — Downstream normally runs higher than Upstream even without
+  a spill — rising to about **4.4x** at the 95th percentile. `CONDUCTIVITY_RATIO_ELEVATED = 3` flags roughly the top
+  10% of readings; `CONDUCTIVITY_RATIO_ALERT = 8` is around the 99.5th percentile and the same order of magnitude as
+  a publicly documented spill (24 December 2023, independently reported as 2,496 µS/cm downstream vs 247 µS/cm
+  upstream — a ratio of about 10x). That exact event is recovered by `flagged_periods()` from this data as a
+  high-confidence period peaking at a ratio of 23.7x on 2023-12-24.
+- **pH excursions:** sanitized pH readings outside `PH_LICENCE_BAND = (6.5, 8.5)`, the mine's actual EPA discharge
+  licence limit.
+- **Turbidity spikes:** sanitized turbidity readings that are robust outliers against the site's own full-history
+  baseline, using a modified z-score (median + MAD) at or above `TURBIDITY_SPIKE_MODIFIED_Z = 3.5` — the standard
+  Iglewicz & Hoaglin outlier threshold.
+- **Flagged periods:** contiguous windows where the conductivity ratio reached the elevated threshold, merged
+  across gaps of up to `FLAGGED_PERIOD_MERGE_GAP_MINUTES = 120`. Confidence is `high` when the peak also reaches
+  the alert threshold and is corroborated by a Downstream turbidity spike or LDP7/LDP8 flow in the same window,
+  `medium` for the alert threshold or either corroboration alone, `low` for an elevated ratio with neither.
+- **Chronic trend:** the daily median ratio across the full history, and its rolling 90-day median — to separate a
+  long-run baseline shift from acute spikes.
+- **Data health:** per site, using pH as the clock, how many stored timestamps have a sanitized value, and any
+  gaps of `GAP_HOURS = 4` or more with no record at all (not null — missing entirely).
+
+`fetch`, `backfill` and `analyze` write all of the above to `output/metrics.json` (same atomic-write pattern as the
+CSVs: a reader never sees a half-written file). It doesn't repeat the full-resolution readings the CSVs already
+have — only summaries:
+
+```json
+{
+  "generated_at": 1759600000,
+  "conductivity_ratio": {"current": 2.15, "tier": "normal", "elevated_threshold": 3, "alert_threshold": 8},
+  "sites": {
+    "Downstream": {"latest_reading_at": 1759599900, "latest_ph": 7.69, "ph_in_band": true},
+    "...": "..."
+  },
+  "chronic_trend": [{"date": "2023-08-08", "daily_median_ratio": 2.68, "rolling_90d_median_ratio": 2.68}, "..."],
+  "flagged_periods": [{"start": 1703147100, "end": 1703404500, "peak_ratio": 23.7, "confidence": "high",
+                        "corroborated_by": ["turbidity"]}, "..."],
+  "data_health": {"Downstream": {"total": 109702, "valid": 103907, "completeness": 0.947, "gaps": ["..."]}, "..."}
+}
+```
+
+`tier` and `confidence` are `"normal"`/`"elevated"`/`"alert"` and `"low"`/`"medium"`/`"high"` respectively; `start`,
+`end`, `generated_at` and the timestamps inside `gaps` are Unix seconds, UTC.
+
 ## Running on GitHub
 
 [.github/workflows/collect.yml](.github/workflows/collect.yml) runs `fetch` every 3 hours, at 00:17, 03:17, 06:17
@@ -110,12 +177,14 @@ because each `fetch` covers the last 24 hours, so up to seven runs in a row can 
    [`backups` release](https://github.com/HoboSTD/peabody/releases/tag/backups) as `readings-YYYY-MM.db.gz`.
 3. Runs the command, then checks the database: SQLite's integrity check must pass, and the number of rows and of
    values must not have gone down. If the check fails, nothing is uploaded and the run fails.
-4. Uploads `readings.db.gz` and the four CSVs to the `data` release, replacing the old ones. A `fetch` that stored
-   nothing new uploads nothing.
+4. Uploads `readings.db.gz`, the four CSVs and `metrics.json` to the `data` release, replacing the old ones (only
+   whichever of those the command actually wrote — `export` doesn't touch `metrics.json`, `analyze` doesn't touch
+   the CSVs). A `fetch` that stored nothing new uploads nothing.
 
 Things to know:
 - **Running a command by hand:** Actions > collect > Run workflow, then choose `fetch`, `backfill` (with optional
-  `--from` and `--to` dates) or `export`. Use `backfill` after an outage of more than 24 hours.
+  `--from` and `--to` dates), `export` or `analyze`. Use `backfill` after an outage of more than 24 hours, or
+  `analyze` to re-publish `metrics.json` alone after tuning a threshold in `config.py`.
 - **If scheduled runs stop, nothing is emailed.** GitHub only emails when a run starts and fails, not when runs
   don't start at all (during a GitHub outage, or if the schedule is turned off or stops being picked up). Check
   now and then that the asset dates on the [`data` release](https://github.com/HoboSTD/peabody/releases/tag/data)
@@ -176,8 +245,8 @@ copies of the database.
 3. **Add the entry:** `./setup.sh --cron`. `crontab -l` should then show this line, once:
    `0 * * * * cd '<repo>' && .venv/bin/python -m extractor fetch >> logs/fetch.log 2>&1`
 4. **Confirm it ran** after the next full hour. `tail logs/fetch.log` should show a `GetTrendValues` line, an
-   `upsert:` line and four `export: wrote` lines. The first run of each day also shows `site list matches (4 sites)`,
-   and a `backup: wrote` line.
+   `upsert:` line, four `export: wrote` lines and a `metrics: wrote` line. The first run of each day also shows
+   `site list matches (4 sites)`, and a `backup: wrote` line.
 
 Things to know:
 - **The machine has to be on.** cron only runs while the computer is running. Each `fetch` covers
@@ -451,9 +520,11 @@ list just means no data in that range. `errors` (top level and per trend) was al
 | [extractor/backup.py](extractor/backup.py) | Backups and retention |
 | [extractor/export.py](extractor/export.py) | The CSVs |
 | [extractor/sites.py](extractor/sites.py) | The daily site-list check |
+| [extractor/metrics.py](extractor/metrics.py) | The pollution-indicator metrics and `metrics.json` |
 | [extractor/cli.py](extractor/cli.py) | The commands, the run lock and the stale-data warning |
 | [setup.sh](setup.sh), [requirements.txt](requirements.txt) | Setup. `requests` and `tzdata` are pinned |
 | [tests/](tests/) | Unit tests, with saved API responses in `tests/fixtures/` |
+| [dashboard/](dashboard/) | A local-only static dashboard over `metrics.json` and the CSVs (see [dashboard/README.md](dashboard/README.md)). Not deployed anywhere yet |
 | [api-tests/](api-tests/) | The original API tests: plan, request bodies, findings and `summarise.py`. The saved responses in `results/` are kept locally and git-ignored |
 | [.github/workflows/collect.yml](.github/workflows/collect.yml) | Collects every 3 hours and publishes the data (see [Running on GitHub](#running-on-github)) |
 | [.github/workflows/tests.yml](.github/workflows/tests.yml) | Runs the tests on GitHub |
@@ -483,6 +554,12 @@ In [extractor/config.py](extractor/config.py):
 | `BACKFILL_PAUSE` | 5 | Seconds between backfill requests |
 | `STALE_HOURS` | 12 | Age of the newest value that triggers a warning |
 | `TIMEOUT` | 60 | Seconds per HTTP request |
+| `SANE_BOUNDS` | see [Metrics](#metrics) | Physically plausible range per parameter, for metrics only |
+| `CONDUCTIVITY_RATIO_ELEVATED`, `CONDUCTIVITY_RATIO_ALERT` | 3, 8 | Downstream:Upstream conductivity ratio tiers (see [Metrics](#metrics)) |
+| `TURBIDITY_SPIKE_MODIFIED_Z` | 3.5 | Outlier threshold for turbidity spikes (see [Metrics](#metrics)) |
+| `PH_LICENCE_BAND` | `(6.5, 8.5)` | The mine's EPA discharge licence limit |
+| `GAP_HOURS` | 4 | Length of a data outage counted in data health |
+| `FLAGGED_PERIOD_MERGE_GAP_MINUTES` | 120 | Readings within this gap are merged into one flagged period |
 
 `setup.sh` checks for Python 3.10+ (set `PYTHON=/path/to/python3` to choose one), creates `.venv`, installs the
 requirements and creates the working folders. With `--cron` it adds the cron line only if it isn't there, and stops
@@ -494,7 +571,7 @@ without writing if the existing crontab can't be read. It's safe to run again.
 .venv/bin/python -m unittest
 ```
 
-68 tests, standard library only, no network. GitHub Actions runs them on every push and pull request, on Python
+83 tests, standard library only, no network. GitHub Actions runs them on every push and pull request, on Python
 3.10 and 3.13 ([.github/workflows/tests.yml](.github/workflows/tests.yml)). The fixtures are real responses: `all-series-1-day.json` (T05),
 `empty-values.json` (T09), `http-400-error-page.html` (T02), `server-exception.json` (T13) and `site-list.json`
 (a `GetMappingData` response from 2026-09-27).
@@ -505,6 +582,7 @@ without writing if the existing crontab can't be read. It's safe to run again.
 | `test_backup.py` | Backups, restoring one, and retention |
 | `test_export.py` | CSV layout, rows exactly as stored, Sydney offsets across daylight saving, a failed write |
 | `test_sites.py` | The site-list check |
+| `test_metrics.py` | Sanitizing, the conductivity ratio, pH excursions, turbidity spikes, flagged periods, the chronic trend, data health and `metrics.json` |
 | `test_client.py` | Response checks, token refresh and retry, all four commands, the run lock, the stale-data warning and turning local backups off |
 
 ### How it was checked

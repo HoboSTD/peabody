@@ -13,7 +13,7 @@ on:
     inputs:
       command:
         type: choice
-        options: [fetch, backfill, export]
+        options: [fetch, backfill, export, analyze]
         default: fetch
       from:
         description: "backfill only: --from YYYY-MM-DD (blank for the default)"
@@ -90,7 +90,12 @@ jobs:
             echo "::error::database check failed (integrity: $ok); not uploading"
             exit 1
           fi
-          if [ "$COMMAND" = export ] || [ "$rows $values" != "$rows_before $values_before" ]; then
+          # analyze only reads the database; verify that, rather than assuming it (README: Metrics).
+          if [ "$COMMAND" = analyze ] && [ "$rows $values" != "$rows_before $values_before" ]; then
+            echo "::error::analyze is expected to be read-only but rows/values changed ($rows_before $values_before -> $rows $values); not uploading"
+            exit 1
+          fi
+          if [ "$COMMAND" = export ] || [ "$COMMAND" = analyze ] || [ "$rows $values" != "$rows_before $values_before" ]; then
             echo "upload=yes" >> "$GITHUB_OUTPUT"
           fi
 
@@ -98,7 +103,13 @@ jobs:
         if: steps.run.outputs.upload == 'yes'
         run: |
           gzip --force --keep data/readings.db
-          gh release upload data data/readings.db.gz output/*.csv --clobber
+          # analyze alone doesn't write the CSVs, and export alone doesn't write metrics.json (README: Metrics
+          # and CSV output), so only upload what this run actually produced. nullglob makes a non-matching
+          # output/*.csv expand to nothing instead of its own literal, unmatched text.
+          shopt -s nullglob
+          assets=(data/readings.db.gz output/*.csv)
+          [ -f output/metrics.json ] && assets+=(output/metrics.json)
+          gh release upload data "${assets[@]}" --clobber
 
       # GitHub turns off scheduled workflows in a public repo after 60 days without activity in it. Enabling the
       # workflow through the API counts as activity, so this keeps the schedule running.

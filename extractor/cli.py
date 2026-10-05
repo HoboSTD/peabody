@@ -8,7 +8,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
-from extractor import backup, client, config, export, sites, store
+from extractor import backup, client, config, export, metrics, sites, store
 from extractor.client import FetchError
 from extractor.session import Session, SessionError
 
@@ -65,6 +65,7 @@ def fetch(args):
             backup.daily(conn, config.BACKUP_DIR)
         store.upsert(conn, readings)
         export.write_all(conn, config.OUTPUT_DIR)
+        metrics.write_summary(conn, config.OUTPUT_DIR)
     finally:
         conn.close()
     warn_if_stale(readings, end)
@@ -121,6 +122,7 @@ def backfill(args):
             total += sum(v is not None for *_, v in readings)
         first = conn.execute("SELECT MIN(ts) FROM readings WHERE value IS NOT NULL").fetchone()[0]
         export.write_all(conn, config.OUTPUT_DIR)
+        metrics.write_summary(conn, config.OUTPUT_DIR)
     finally:
         conn.close()
     earliest = f"{datetime.fromtimestamp(first, timezone.utc):%Y-%m-%d %H:%M} UTC" if first else "none"
@@ -134,6 +136,16 @@ def export_csv(args):
     conn = store.connect(config.DB_PATH)
     try:
         export.write_all(conn, config.OUTPUT_DIR)
+    finally:
+        conn.close()
+    return 0
+
+
+def analyze(args):
+    """Write output/metrics.json from the database (README: Metrics). No network."""
+    conn = store.connect(config.DB_PATH)
+    try:
+        metrics.write_summary(conn, config.OUTPUT_DIR)
     finally:
         conn.close()
     return 0
@@ -163,6 +175,9 @@ def main(argv=None):
 
     commands.add_parser("export", help="write output/<site>.csv from the database (fetch and backfill do this too)"
                         ).set_defaults(run=export_csv)
+
+    commands.add_parser("analyze", help="write output/metrics.json summarizing water-quality trends "
+                        "(fetch and backfill do this too)").set_defaults(run=analyze)
 
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, stream=sys.stderr,

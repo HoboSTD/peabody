@@ -17,6 +17,26 @@ BACKUP_KEEP_DAYS = 7  # keep every backup this recent; older ones only the earli
 BACKFILL_PAUSE = 5  # seconds between backfill requests (README: Being polite to the server)
 STALE_HOURS = 12  # fetch warns if the newest reading is older than this (normally about 3 hours)
 
+# Metrics (README: Metrics). Bounds and thresholds are derived from the real collected data, not guessed; the
+# README section has the percentile and incident analysis behind each one.
+SANE_BOUNDS = {
+    "ph": (0, 14),                          # the pH scale itself
+    "specific_conductivity": (10, 10000),   # below 10: the sensor reading (near) zero, not real stream water;
+                                             # above 10,000: real faults jump straight into the hundreds of thousands
+    "temperature": (-5, 45),                # real faults read in the hundreds or thousands of degrees
+    "turbidity": (0, 20000),                # turbidity can't be negative; real faults are deeply negative, not
+                                             # near zero
+}
+CONDUCTIVITY_RATIO_ELEVATED = 3    # Downstream:Upstream specific_conductivity ratio. The typical (median) ratio
+                                    # is already about 1.9x, so this flags roughly the top 10% of readings
+CONDUCTIVITY_RATIO_ALERT = 8       # about the 99.5th percentile of the ratio; a publicly documented spill
+                                    # (24 Dec 2023, reported as 2,496 vs 247 µS/cm) is this order of magnitude
+TURBIDITY_SPIKE_MODIFIED_Z = 3.5   # Iglewicz & Hoaglin's standard outlier threshold for a modified z-score
+                                    # (median + MAD), applied to each site's own full-history baseline
+PH_LICENCE_BAND = (6.5, 8.5)       # the mine's actual EPA discharge licence limit, not derived from this data
+GAP_HOURS = 4                      # a stretch this long with no record at all counts as an outage in data_health
+FLAGGED_PERIOD_MERGE_GAP_MINUTES = 120  # contiguous elevated readings within this gap are one incident
+
 # Server (README: API reference)
 BASE_URL = "https://peabody.ghost.site"
 TRENDS_URL = BASE_URL + "/gHostModules/DataAccess/GetTrendValues"
