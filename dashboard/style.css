@@ -1,0 +1,129 @@
+/* Palette and chrome follow the dataviz skill's reference instance (see its references/palette.md):
+   fixed categorical hues for the 4 sites, a reserved status scale for tiers/confidence/health, light and
+   dark values declared separately (not an automatic invert). */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+
+  /* categorical, fixed order: Upstream -> LDP7 -> LDP8 -> Downstream (the water's own path) */
+  --site-upstream: #2a78d6;
+  --site-ldp7: #eb6834;
+  --site-ldp8: #1baf7a;
+  --site-downstream: #eda100;
+
+  /* status, reserved for tier/confidence/health — never reused as a series color */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --site-upstream: #3987e5;
+    --site-ldp7: #d95926;
+    --site-ldp8: #199e70;
+    --site-downstream: #c98500;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
+
+header.page-header {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px;
+  margin-bottom: 20px;
+}
+header.page-header h1 { font-size: 20px; margin: 0; }
+#freshness { color: var(--text-secondary); font-size: 13px; }
+#freshness.stale { color: var(--status-serious); font-weight: 600; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.headline { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.tile .tile-label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.tile .tile-value { font-size: 26px; font-weight: 600; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+.tile .tile-sub { font-size: 12px; color: var(--text-muted); }
+.status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.status-good { background: var(--status-good); }
+.status-warning { background: var(--status-warning); }
+.status-serious { background: var(--status-serious); }
+.status-critical { background: var(--status-critical); }
+.status-unknown { background: var(--text-muted); }
+.status-label { font-weight: 600; }
+.status-label.status-text-good { color: var(--status-good); }
+.status-label.status-text-warning { color: #9a6a00; }
+.status-label.status-text-serious { color: var(--status-serious); }
+.status-label.status-text-critical { color: var(--status-critical); }
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .status-label.status-text-warning { color: var(--status-warning); }
+}
+
+.window-toggle { display: flex; gap: 4px; }
+.window-toggle button {
+  font: inherit; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.window-toggle button.active { background: var(--site-upstream); color: #fff; border-color: transparent; }
+
+section { margin-bottom: 28px; }
+section > h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary);
+               margin: 0 0 10px; }
+
+.charts-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.chart-card h3 { margin: 0 0 2px; font-size: 14px; }
+.chart-card .chart-note { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+/* Chart.js needs an explicitly-sized, positioned container to size its canvas into — giving the canvas itself a
+   height doesn't reliably work with responsive:true, which is what was producing inconsistent chart heights. */
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap canvas { width: 100%; height: 100%; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; }
+th { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+tbody tr:hover { background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
+.pill-high { background: var(--status-critical); }
+.pill-medium { background: var(--status-serious); }
+.pill-low { background: var(--status-warning); color: #3a2a00; }
+.bar-track { background: var(--gridline); border-radius: 4px; height: 8px; width: 160px; overflow: hidden; display: inline-block; vertical-align: middle; }
+/* display:block (not inline-block) so there's no baseline/vertical-align offset against .bar-track clipping most
+   of the fill away, and an explicit height in px (not %) rather than relying on percentage-height resolution. */
+.bar-fill { display: block; height: 8px; border-radius: 4px; }
+.empty-note { color: var(--text-muted); font-style: italic; }
+.loading { color: var(--text-muted); padding: 24px 0; }
+.hidden { display: none; }
+.section-note { color: var(--text-secondary); font-size: 13px; margin: 0 0 14px; }
+.pagination { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 13px; }
+.pagination button {
+  font: inherit; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+  padding: 4px 12px; border-radius: 6px; cursor: pointer;
+}
+.pagination button:disabled { opacity: .4; cursor: default; }
+.pagination .page-label { color: var(--text-muted); }

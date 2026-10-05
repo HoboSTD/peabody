@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metropolitan water monitoring</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+<main>
+  <header class="page-header">
+    <div>
+      <h1>Metropolitan water monitoring</h1>
+      <div id="freshness">Loading…</div>
+    </div>
+    <div class="window-toggle" id="window-toggle">
+      <button data-days="1">24h</button>
+      <button data-days="7">7d</button>
+      <button data-days="30">30d</button>
+      <button data-days="90" class="active">90d</button>
+    </div>
+  </header>
+
+  <p class="section-note">
+    This page tracks water-quality readings published for four monitoring points on the creek near the
+    Metropolitan Coal Mine: <strong>Upstream</strong> (before the mine site), the mine's two official discharge
+    points — <strong>LDP7</strong> (the water treatment plant) and <strong>LDP8</strong> (Turkeys Nest) — and
+    <strong>Downstream</strong> (after the mine site). Comparing Downstream against Upstream is the main way the
+    charts below show whether something entering the creek near the mine is changing the water below it. Readings
+    are taken automatically every 15 minutes and this page refreshes from them every few hours — nothing here
+    involves a person testing a water sample by hand.
+  </p>
+
+  <section class="headline" id="headline" aria-label="Current status">
+    <div class="card tile" id="tile-ratio">
+      <div class="tile-label">Downstream : Upstream conductivity</div>
+      <div class="tile-value">—</div>
+      <div class="tile-sub">—</div>
+    </div>
+    <div class="card tile" id="tile-ph">
+      <div class="tile-label">pH vs 6.5–8.5 licence band</div>
+      <div class="tile-value">—</div>
+      <div class="tile-sub">—</div>
+    </div>
+    <div class="card tile" id="tile-flagged">
+      <div class="tile-label">Flagged periods, high confidence</div>
+      <div class="tile-value">—</div>
+      <div class="tile-sub">—</div>
+    </div>
+    <div class="card tile" id="tile-freshness">
+      <div class="tile-label">Newest reading</div>
+      <div class="tile-value">—</div>
+      <div class="tile-sub">—</div>
+    </div>
+  </section>
+  <p class="section-note">These four tiles are a snapshot of the single most recent reading only. The sections
+    below explain what each measurement is and why it's used.</p>
+
+  <section>
+    <h2>Water quality</h2>
+    <p class="section-note">Each chart tracks one property of the water, measured every 15 minutes at all four
+      sites by automatic sensors.</p>
+    <div class="charts-grid">
+      <div class="card chart-card">
+        <h3>Specific conductivity</h3>
+        <p class="chart-note">Specific conductivity measures how easily electricity passes through the water,
+          which depends on how much dissolved mineral and salt content it carries — purer water conducts less,
+          water carrying more dissolved solids conducts more. It's measured in microsiemens per centimetre
+          (µS/cm) and is one of the simplest ways to tell whether something has added dissolved material to the
+          water, since it responds quickly with no lab test needed. Comparing Downstream to Upstream, rather than
+          looking at Downstream alone, matters because conductivity naturally rises and falls with rainfall and
+          the seasons at both sites together — a gap that opens up between the two lines, beyond how they
+          normally relate, is the signal worth attention.</p>
+        <div class="chart-wrap"><canvas id="chart-conductivity"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>Turbidity</h3>
+        <p class="chart-note">Turbidity measures how cloudy or murky the water looks, caused by fine particles —
+          sediment, silt, organic matter — suspended in it, measured in NTU (nephelometric turbidity units;
+          higher means cloudier). Rain and natural runoff stir up sediment too, so turbidity is naturally spiky
+          rather than steady at every site: a mostly-flat line with occasional sharp spikes is the expected
+          shape, not a fault.</p>
+        <div class="chart-wrap"><canvas id="chart-turbidity"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>pH</h3>
+        <p class="chart-note">pH measures how acidic or alkaline water is, on a scale from 0 (very acidic) to 14
+          (very alkaline); 7 is neutral, and most natural fresh water sits a little either side of that. The
+          shaded band (6.5–8.5) is the specific range the mine's EPA discharge licence requires its treated
+          wastewater to stay within before release — a regulatory limit, not a natural law — so a reading outside
+          the band at a discharge point (LDP7/LDP8) means that particular licence condition wasn't met at that
+          moment.</p>
+        <div class="chart-wrap"><canvas id="chart-ph"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>Discharge flow</h3>
+        <p class="chart-note">"Discharge" is treated water the mine releases into the creek from two specific,
+          licensed points — LDP7 (the water treatment plant) and LDP8 (Turkeys Nest). This chart shows litres
+          released per 15 minutes, so its timing can be compared against the conductivity chart above. Most of
+          the time there's nothing to show here: LDP7 only reports a reading at all while it's actively
+          discharging, which the full history shows happening on only a handful of days a year, and LDP8's flow
+          reads as zero almost all the time too. An empty chart below means no discharge was recorded in this
+          window, not a missing-data problem.</p>
+        <div class="chart-wrap" id="chart-flow-wrap"><canvas id="chart-flow"></canvas></div>
+        <p class="chart-note empty-note hidden" id="flow-empty-note">No discharge was recorded at either point in
+          this window.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Flagged periods</h2>
+    <p class="section-note">
+      A "flagged period" is a stretch of time where Downstream's specific conductivity was notably higher than
+      Upstream's, relative to how those two sites normally compare — generated automatically by checking that
+      ratio against fixed thresholds, not by a person reviewing the data. <strong>Confidence</strong> reflects how
+      much supporting evidence there is beyond the conductivity ratio alone:
+    </p>
+    <ul class="section-note">
+      <li><strong>High</strong> — the ratio was extreme, and a turbidity spike or active discharge was recorded
+        at the same time.</li>
+      <li><strong>Medium</strong> — either the ratio alone was extreme, or a smaller rise coincided with a
+        turbidity spike or discharge.</li>
+      <li><strong>Low</strong> — the ratio was somewhat elevated, with no other supporting signal.</li>
+    </ul>
+    <p class="section-note">"Corroborated by" lists which supporting signal(s), if any, lined up with the period.</p>
+    <div class="card">
+      <div id="flagged-table"><div class="loading">Loading…</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Chronic trend</h2>
+    <p class="section-note">The conductivity ratio above moves around a lot day to day. This chart separates that
+      short-term noise from any longer-run change: the thin line is the median ratio for each individual day, and
+      the bold line smooths that into a rolling 90-day median. A sustained shift in the bold line — rather than a
+      single day's spike — is what would indicate the underlying relationship between the two sites is changing
+      over time.</p>
+    <div class="card chart-card">
+      <div class="chart-wrap"><canvas id="chart-trend"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Data health</h2>
+    <p class="section-note">Not every 15-minute interval has a usable reading at every site — equipment
+      occasionally drops out, and some sites are designed to report data only some of the time. This table shows,
+      per site, what share of expected readings are present and valid, and lists any stretches of
+      <span id="gap-hours-note">4</span> hours or more with no record at all. A low number isn't automatically a
+      problem: <strong>LDP7 Water Treatment Plant</strong> is expected to score low here, because that point only
+      takes a reading at all while it's actively discharging, which happens on only a handful of days a year —
+      the rest of the time there's simply nothing for it to record.</p>
+    <div class="card">
+      <div id="health-table"><div class="loading">Loading…</div></div>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
