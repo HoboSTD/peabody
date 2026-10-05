@@ -74,7 +74,7 @@ async function fetchCSV(path) {
 }
 
 function loadSite(site) {
-  if (!csvCache.has(site.file)) csvCache.set(site.file, fetchCSV(`/output/${site.file}`));
+  if (!csvCache.has(site.file)) csvCache.set(site.file, fetchCSV(`../output/${site.file}`));
   return csvCache.get(site.file);
 }
 
@@ -338,7 +338,7 @@ function wireWindowToggle() {
 async function init() {
   wireWindowToggle();
   document.getElementById("gap-hours-note").textContent = GAP_HOURS;
-  const res = await fetch("/output/metrics.json");
+  const res = await fetch("../output/metrics.json");
   metricsData = await res.json();
   renderHeadline(metricsData);
   renderFlaggedTable(metricsData.flagged_periods);

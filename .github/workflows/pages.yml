@@ -1,0 +1,65 @@
+# Deploys the dashboard (README: Metrics, dashboard/README.md) to GitHub Pages, with the latest metrics.json
+# and CSVs from the `data` release bundled alongside it so the published page is a single, same-origin site —
+# no cross-origin fetch to the release's asset CDN at viewer load time.
+#
+# Runs after every successful `collect` run (so the published data stays current, same cadence as collection),
+# on a push to main that touches the dashboard itself, and by hand (Actions > pages > Run workflow).
+name: pages
+
+on:
+  workflow_run:
+    workflows: [collect]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: [dashboard/**, .github/workflows/pages.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  deploy:
+    # Only deploy for a workflow_run trigger if collect actually succeeded; always deploy for the other triggers.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Only metrics.json and the CSVs — not the ~13 MB database, which the dashboard never reads.
+      - name: Download the latest metrics and CSVs
+        run: |
+          mkdir -p site/output
+          gh release download data --pattern "*.csv" --pattern "metrics.json" --dir site/output --clobber
+
+      - name: Assemble the site
+        run: |
+          cp -r dashboard site/dashboard
+          # A plain root landing page, since the dashboard itself lives at /dashboard/ (same layout as local
+          # preview: dashboard/ and output/ as siblings — see dashboard/app.js's relative fetch paths).
+          cat > site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <meta charset="utf-8">
+          <meta http-equiv="refresh" content="0; url=dashboard/">
+          <title>Metropolitan water monitoring</title>
+          <p>Redirecting to <a href="dashboard/">the dashboard</a>.</p>
+          HTML
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

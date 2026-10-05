@@ -202,6 +202,21 @@ Things to know:
 - **Cost:** nothing. Actions minutes are free for public repos, and so are release downloads. A run takes about a
   minute.
 
+### The dashboard on GitHub Pages
+
+[.github/workflows/pages.yml](.github/workflows/pages.yml) publishes [dashboard/](dashboard/) to GitHub Pages,
+bundling the latest `metrics.json` and CSVs from the `data` release alongside it so the live page is a single,
+same-origin site — it never fetches cross-origin from the release at viewer load time. It runs after every
+successful `collect` run (so the published data is only as stale as the data release itself), on a push to `main`
+that touches `dashboard/`, and by hand (Actions > pages > Run workflow).
+
+**One-time setup, done once in the repo's settings, not from a workflow file:** Settings > Pages > Source: "GitHub
+Actions". Until that's done, `pages.yml` runs but has nothing to deploy to.
+
+The published URL is shown on the Pages settings page and on each `pages` run's summary, normally
+`https://<owner>.github.io/<repo>/` (the root redirects to `/dashboard/`). It costs nothing, for the same reason
+`collect` does: Actions minutes and Pages bandwidth are both free for a public repo.
+
 ### Restoring the database on GitHub
 
 If `readings.db.gz` is missing from the `data` release, or holds bad data, upload a good copy from the `backups`
@@ -524,11 +539,12 @@ list just means no data in that range. `errors` (top level and per trend) was al
 | [extractor/cli.py](extractor/cli.py) | The commands, the run lock and the stale-data warning |
 | [setup.sh](setup.sh), [requirements.txt](requirements.txt) | Setup. `requests` and `tzdata` are pinned |
 | [tests/](tests/) | Unit tests, with saved API responses in `tests/fixtures/` |
-| [dashboard/](dashboard/) | A local-only static dashboard over `metrics.json` and the CSVs (see [dashboard/README.md](dashboard/README.md)). Not deployed anywhere yet |
+| [dashboard/](dashboard/) | A static dashboard over `metrics.json` and the CSVs (see [dashboard/README.md](dashboard/README.md)). Published to GitHub Pages by [.github/workflows/pages.yml](.github/workflows/pages.yml); can also be previewed locally |
 | [api-tests/](api-tests/) | The original API tests: plan, request bodies, findings and `summarise.py`. The saved responses in `results/` are kept locally and git-ignored |
 | [.github/workflows/collect.yml](.github/workflows/collect.yml) | Collects every 3 hours and publishes the data (see [Running on GitHub](#running-on-github)) |
 | [.github/workflows/tests.yml](.github/workflows/tests.yml) | Runs the tests on GitHub |
 | [.github/workflows/live-check.yml](.github/workflows/live-check.yml) | Runs `check` against the live site from GitHub, started by hand. Stores nothing |
+| [.github/workflows/pages.yml](.github/workflows/pages.yml) | Publishes the dashboard to GitHub Pages (see [The dashboard on GitHub Pages](#the-dashboard-on-github-pages)) |
 | [.github/dependabot.yml](.github/dependabot.yml) | Monthly update PRs for the pinned requirements and the workflow actions |
 
 Everything the program creates stays inside the repo folder and is git-ignored:
